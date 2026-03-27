@@ -76,6 +76,15 @@ func newServeCmd() *cobra.Command {
 				log.Println("alerting enabled")
 			}
 
+			ann := alerter.NewAnnotator(alerter.AnnotationConfig{
+				GrafanaURL:   os.Getenv("GRAFANA_URL"),
+				GrafanaToken: os.Getenv("GRAFANA_TOKEN"),
+			}, 5*time.Minute)
+			eng.SetAnnotator(ann)
+			if ann != nil {
+				log.Println("grafana annotations enabled")
+			}
+
 			addr := fmt.Sprintf(":%d", cfg.MetricsPort)
 			srv := server.New(addr, registry)
 

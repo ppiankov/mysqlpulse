@@ -19,6 +19,7 @@ type Engine struct {
 	targets    []Target
 	collectors []collector.Collector
 	alerter    *alerter.Alerter
+	annotator  *alerter.Annotator
 }
 
 // Target pairs a DSN label with its database handle.
@@ -40,6 +41,11 @@ func New(interval time.Duration, targets []Target, collectors []collector.Collec
 // SetAlerter configures the alerter for the engine.
 func (e *Engine) SetAlerter(a *alerter.Alerter) {
 	e.alerter = a
+}
+
+// SetAnnotator configures the Grafana annotator for the engine.
+func (e *Engine) SetAnnotator(a *alerter.Annotator) {
+	e.annotator = a
 }
 
 // Run starts the poll loop. Blocks until ctx is cancelled.
@@ -75,6 +81,6 @@ func (e *Engine) poll(ctx context.Context) {
 		}
 
 		// Evaluate alert conditions after collecting.
-		alerter.Evaluate(ctx, t.DB, t.DSN, e.alerter)
+		alerter.Evaluate(ctx, t.DB, t.DSN, e.alerter, e.annotator)
 	}
 }

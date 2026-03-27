@@ -16,17 +16,22 @@ const (
 	HistoryListMax    = 1000.0
 )
 
-// Evaluate checks alert conditions against a MySQL instance and fires alerts.
-func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
-	if a == nil {
+// Evaluate checks alert conditions against a MySQL instance and fires alerts/annotations.
+func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter, ann *Annotator) {
+	if a == nil && ann == nil {
 		return
 	}
 
 	host := HostFromDSN(instance)
 	masked := MaskDSN(instance)
 
+	fire := func(alert Alert) {
+		a.Send(alert)
+		ann.Annotate(alert.Type, alert.Host, alert.Message, nil)
+	}
+
 	// Replication checks.
-	evaluateReplication(ctx, db, masked, host, a)
+	evaluateReplication(ctx, db, masked, host, fire)
 
 	// Status-based checks.
 	status, err := globalStatus(ctx, db)
@@ -42,7 +47,7 @@ func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
 			if current, ok := status["Threads_connected"]; ok {
 				ratio := current / maxConns
 				if ratio > ConnExhaustionMax {
-					a.Send(Alert{
+					fire(Alert{
 						Type:     AlertConnExhaustion,
 						Message:  fmt.Sprintf("Connection usage at %.0f%% (%.0f/%.0f)", ratio*100, current, maxConns),
 						Instance: masked,
@@ -58,7 +63,7 @@ func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
 		if free, ok := status["Innodb_buffer_pool_pages_free"]; ok {
 			freeRatio := free / total
 			if freeRatio < BufferPoolFreeMin {
-				a.Send(Alert{
+				fire(Alert{
 					Type:     AlertBufferPool,
 					Message:  fmt.Sprintf("Buffer pool %.1f%% free (%.0f/%.0f pages)", freeRatio*100, free, total),
 					Instance: masked,
@@ -72,7 +77,7 @@ func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
 	if deadlocks, ok := status["Innodb_deadlocks"]; ok && deadlocks > 0 {
 		// Only alert once via cooldown — the cumulative counter will always be > 0.
 		// This is handled by the alerter's dedup/cooldown.
-		a.Send(Alert{
+		fire(Alert{
 			Type:     AlertDeadlocks,
 			Message:  fmt.Sprintf("Deadlocks detected (cumulative: %.0f)", deadlocks),
 			Instance: masked,
@@ -82,7 +87,7 @@ func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
 
 	// History list length.
 	if hll, ok := status["Innodb_history_list_length"]; ok && hll > HistoryListMax {
-		a.Send(Alert{
+		fire(Alert{
 			Type:     AlertHistoryList,
 			Message:  fmt.Sprintf("History list length: %.0f (threshold: %.0f)", hll, HistoryListMax),
 			Instance: masked,
@@ -91,7 +96,7 @@ func Evaluate(ctx context.Context, db *sql.DB, instance string, a *Alerter) {
 	}
 }
 
-func evaluateReplication(ctx context.Context, db *sql.DB, masked, host string, a *Alerter) {
+func evaluateReplication(ctx context.Context, db *sql.DB, masked, host string, fire func(Alert)) {
 	for _, query := range []string{"SHOW REPLICA STATUS", "SHOW SLAVE STATUS"} {
 		rows, err := db.QueryContext(ctx, query)
 		if err != nil {
@@ -127,7 +132,7 @@ func evaluateReplication(ctx context.Context, db *sql.DB, masked, host string, a
 		sqlRunning := firstVal(m, "Replica_SQL_Running", "Slave_SQL_Running")
 
 		if !strings.EqualFold(ioRunning, "Yes") || !strings.EqualFold(sqlRunning, "Yes") {
-			a.Send(Alert{
+			fire(Alert{
 				Type:     AlertReplStopped,
 				Message:  fmt.Sprintf("Replication stopped (IO=%s, SQL=%s)", ioRunning, sqlRunning),
 				Instance: masked,
@@ -140,7 +145,7 @@ func evaluateReplication(ctx context.Context, db *sql.DB, masked, host string, a
 			if v, ok := m[key]; ok && v != "" {
 				var lag float64
 				if _, err := fmt.Sscanf(v, "%f", &lag); err == nil && lag > ReplLagThreshold {
-					a.Send(Alert{
+					fire(Alert{
 						Type:     AlertReplLag,
 						Message:  fmt.Sprintf("Replication lag: %.0fs (threshold: %.0fs)", lag, ReplLagThreshold),
 						Instance: masked,
