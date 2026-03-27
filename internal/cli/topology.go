@@ -229,14 +229,14 @@ func toDOT(nodes []TopologyNode) string {
 
 	for _, n := range nodes {
 		label := fmt.Sprintf("%s\\n[%s]", n.Instance, n.Role)
-		b.WriteString(fmt.Sprintf("  %q [label=%q];\n", n.Instance, label))
+		fmt.Fprintf(&b, "  %q [label=%q];\n", n.Instance, label)
 
 		if n.SourceHost != "" {
 			lagLabel := ""
 			if n.ReplLag != nil {
 				lagLabel = fmt.Sprintf("lag=%.0fs", *n.ReplLag)
 			}
-			b.WriteString(fmt.Sprintf("  %q -> %q [label=%q];\n", n.SourceHost, n.Instance, lagLabel))
+			fmt.Fprintf(&b, "  %q -> %q [label=%q];\n", n.SourceHost, n.Instance, lagLabel)
 		}
 	}
 
