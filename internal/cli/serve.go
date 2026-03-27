@@ -48,6 +48,11 @@ func newServeCmd() *cobra.Command {
 
 			collectors := []collector.Collector{
 				collector.NewScrape(),
+				collector.NewConnections(),
+				collector.NewReplication(),
+				collector.NewInnoDB(),
+				collector.NewQueries(),
+				collector.NewProcesslist(),
 			}
 
 			eng := engine.New(cfg.PollInterval, targets, collectors)
