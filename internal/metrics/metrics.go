@@ -167,6 +167,95 @@ var (
 		Name: "mysql_processlist_locked",
 		Help: "Number of processes in locked state.",
 	}, []string{"instance"})
+
+	// Table stats (WO-11).
+	TableRows = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_table_rows",
+		Help: "Estimated row count per table.",
+	}, []string{"instance", "schema", "table"})
+
+	TableDataBytes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_table_data_bytes",
+		Help: "Data size in bytes per table.",
+	}, []string{"instance", "schema", "table"})
+
+	TableIndexBytes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_table_index_bytes",
+		Help: "Index size in bytes per table.",
+	}, []string{"instance", "schema", "table"})
+
+	TableFreeBytes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_table_free_bytes",
+		Help: "Free space (fragmentation) in bytes per table.",
+	}, []string{"instance", "schema", "table"})
+
+	TableAutoIncHeadroom = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_table_auto_increment_headroom",
+		Help: "Remaining auto_increment headroom before overflow.",
+	}, []string{"instance", "schema", "table"})
+
+	// Binary log (WO-12).
+	BinlogCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_binlog_count",
+		Help: "Number of binary log files.",
+	}, []string{"instance"})
+
+	BinlogSizeBytes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_binlog_size_bytes",
+		Help: "Total size of all binary log files.",
+	}, []string{"instance"})
+
+	BinlogCacheUseTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_binlog_cache_use_total",
+		Help: "Number of transactions that used the binlog cache (cumulative).",
+	}, []string{"instance"})
+
+	BinlogCacheDiskUseTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_binlog_cache_disk_use_total",
+		Help: "Number of transactions that used a temp file for binlog cache (cumulative).",
+	}, []string{"instance"})
+
+	// Performance schema (WO-13).
+	PerfQueryAvgSeconds = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_perf_query_avg_seconds",
+		Help: "Average query execution time in seconds.",
+	}, []string{"instance", "digest"})
+
+	PerfQueryCalls = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_perf_query_calls",
+		Help: "Total number of query executions.",
+	}, []string{"instance", "digest"})
+
+	PerfQueryRowsExamined = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_perf_query_rows_examined",
+		Help: "Total rows examined by query digest.",
+	}, []string{"instance", "digest"})
+
+	// Global variables (WO-14).
+	MaxConnections = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_max_connections",
+		Help: "Configured max_connections value.",
+	}, []string{"instance"})
+
+	InnoDBBufferPoolSizeBytes = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_innodb_buffer_pool_size_bytes",
+		Help: "Configured innodb_buffer_pool_size in bytes.",
+	}, []string{"instance"})
+
+	ReadOnly = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_read_only",
+		Help: "Whether read_only is enabled (1=on, 0=off).",
+	}, []string{"instance"})
+
+	SuperReadOnly = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_super_read_only",
+		Help: "Whether super_read_only is enabled (1=on, 0=off).",
+	}, []string{"instance"})
+
+	GTIDMode = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gtid_mode",
+		Help: "GTID mode (1=ON, 0=OFF).",
+	}, []string{"instance"})
 )
 
 // Register adds all metric descriptors to the given registerer.
@@ -191,5 +280,16 @@ func Register(reg prometheus.Registerer) {
 		// Process list (WO-10).
 		ProcesslistByState, ProcesslistByCommand,
 		ProcesslistLongest, ProcesslistByUser, ProcesslistLocked,
+		// Table stats (WO-11).
+		TableRows, TableDataBytes, TableIndexBytes,
+		TableFreeBytes, TableAutoIncHeadroom,
+		// Binary log (WO-12).
+		BinlogCount, BinlogSizeBytes,
+		BinlogCacheUseTotal, BinlogCacheDiskUseTotal,
+		// Performance schema (WO-13).
+		PerfQueryAvgSeconds, PerfQueryCalls, PerfQueryRowsExamined,
+		// Global variables (WO-14).
+		MaxConnections, InnoDBBufferPoolSizeBytes,
+		ReadOnly, SuperReadOnly, GTIDMode,
 	)
 }
