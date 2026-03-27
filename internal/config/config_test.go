@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 	"time"
 )
@@ -21,9 +20,9 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestFromEnv(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
-		os.Unsetenv("MYSQL_DSN")
-		os.Unsetenv("METRICS_PORT")
-		os.Unsetenv("POLL_INTERVAL")
+		t.Setenv("MYSQL_DSN", "")
+		t.Setenv("METRICS_PORT", "")
+		t.Setenv("POLL_INTERVAL", "")
 
 		cfg, err := FromEnv()
 		if err != nil {

@@ -112,7 +112,7 @@ func runDoctorChecks(dsn, node string) []DoctorCheck {
 			Name: prefix + "connect", Status: "fail", Message: err.Error(),
 		}}
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Connectivity.
 	if err := db.Ping(); err != nil {
@@ -155,7 +155,7 @@ func checkQuery(db *sql.DB, name, query string) DoctorCheck {
 	if err != nil {
 		return DoctorCheck{Name: name, Status: "fail", Message: err.Error()}
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return DoctorCheck{Name: name, Status: "pass"}
 }
 

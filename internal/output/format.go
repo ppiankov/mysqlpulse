@@ -60,10 +60,10 @@ func renderJSON(w io.Writer, result Result) error {
 func renderTable(w io.Writer, t *Table) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	if len(t.Headers) > 0 {
-		fmt.Fprintln(tw, strings.Join(t.Headers, "\t"))
+		_, _ = fmt.Fprintln(tw, strings.Join(t.Headers, "\t"))
 	}
 	for _, row := range t.Rows {
-		fmt.Fprintln(tw, strings.Join(row, "\t"))
+		_, _ = fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
 	return tw.Flush()
 }
