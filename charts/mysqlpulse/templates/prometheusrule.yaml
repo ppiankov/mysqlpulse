@@ -1,0 +1,71 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-mysqlpulse
+  labels:
+    app.kubernetes.io/name: mysqlpulse
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- with .Values.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: mysqlpulse.rules
+      rules:
+        - alert: MySQLDown
+          expr: mysql_up == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MySQL instance {{ "{{" }} $labels.instance {{ "}}" }} is down"
+
+        - alert: MySQLReplicationStopped
+          expr: mysql_repl_running == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Replication stopped on {{ "{{" }} $labels.instance {{ "}}" }}"
+
+        - alert: MySQLReplicationLag
+          expr: mysql_repl_lag_seconds > 30
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Replication lag {{ "{{" }} $value {{ "}}" }}s on {{ "{{" }} $labels.instance {{ "}}" }}"
+
+        - alert: MySQLBufferPoolPressure
+          expr: mysql_innodb_buffer_pool_pages{state="free"} / mysql_innodb_buffer_pool_pages{state="total"} < 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Buffer pool <10% free on {{ "{{" }} $labels.instance {{ "}}" }}"
+
+        - alert: MySQLConnectionExhaustion
+          expr: mysql_threads_connected / mysql_max_connections > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Connections >80% on {{ "{{" }} $labels.instance {{ "}}" }}"
+
+        - alert: MySQLDeadlocks
+          expr: rate(mysql_innodb_deadlocks_total[5m]) > 0
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Deadlocks detected on {{ "{{" }} $labels.instance {{ "}}" }}"
+
+        - alert: MySQLReadOnlyDrift
+          expr: changes(mysql_read_only[5m]) > 0
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "read_only changed on {{ "{{" }} $labels.instance {{ "}}" }}"
+{{- end }}

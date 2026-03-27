@@ -1,0 +1,129 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus"
+    }
+  ],
+  "title": "mysqlpulse",
+  "uid": "mysqlpulse-overview",
+  "version": 1,
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "query": "label_values(mysql_up, instance)",
+        "datasource": "${DS_PROMETHEUS}",
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "MySQL Up",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [{ "expr": "mysql_up{instance=~\"$instance\"}" }],
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }] } }
+    },
+    {
+      "title": "Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 4, "y": 0 },
+      "targets": [
+        { "expr": "mysql_threads_connected{instance=~\"$instance\"}", "legendFormat": "{{instance}} connected" },
+        { "expr": "mysql_threads_running{instance=~\"$instance\"}", "legendFormat": "{{instance}} running" }
+      ]
+    },
+    {
+      "title": "Replication Lag",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "mysql_repl_lag_seconds{instance=~\"$instance\"}", "legendFormat": "{{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "title": "Replication Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "targets": [{ "expr": "mysql_repl_running{instance=~\"$instance\"}" }],
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "STOPPED", "color": "red" }, "1": { "text": "RUNNING", "color": "green" } } }] } }
+    },
+    {
+      "title": "InnoDB Buffer Pool Hit Ratio",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "1 - (rate(mysql_innodb_buffer_pool_pages{instance=~\"$instance\",state=\"free\"}[5m]) / rate(mysql_innodb_buffer_pool_pages{instance=~\"$instance\",state=\"total\"}[5m]))", "legendFormat": "{{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 0.9, "color": "yellow" }, { "value": 0.99, "color": "green" }] } } }
+    },
+    {
+      "title": "InnoDB Buffer Pool Pages",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 8 },
+      "targets": [
+        { "expr": "mysql_innodb_buffer_pool_pages{instance=~\"$instance\",state=\"total\"}", "legendFormat": "{{instance}} total" },
+        { "expr": "mysql_innodb_buffer_pool_pages{instance=~\"$instance\",state=\"free\"}", "legendFormat": "{{instance}} free" },
+        { "expr": "mysql_innodb_buffer_pool_pages{instance=~\"$instance\",state=\"dirty\"}", "legendFormat": "{{instance}} dirty" }
+      ]
+    },
+    {
+      "title": "QPS",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 8 },
+      "targets": [
+        { "expr": "rate(mysql_queries_total{instance=~\"$instance\"}[5m])", "legendFormat": "{{instance}} queries/s" },
+        { "expr": "rate(mysql_slow_queries_total{instance=~\"$instance\"}[5m])", "legendFormat": "{{instance}} slow/s" }
+      ]
+    },
+    {
+      "title": "Commands",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "rate(mysql_commands_total{instance=~\"$instance\",command=\"select\"}[5m])", "legendFormat": "{{instance}} select/s" },
+        { "expr": "rate(mysql_commands_total{instance=~\"$instance\",command=\"insert\"}[5m])", "legendFormat": "{{instance}} insert/s" },
+        { "expr": "rate(mysql_commands_total{instance=~\"$instance\",command=\"update\"}[5m])", "legendFormat": "{{instance}} update/s" },
+        { "expr": "rate(mysql_commands_total{instance=~\"$instance\",command=\"delete\"}[5m])", "legendFormat": "{{instance}} delete/s" }
+      ]
+    },
+    {
+      "title": "InnoDB Deadlocks & Row Lock Waits",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "rate(mysql_innodb_deadlocks_total{instance=~\"$instance\"}[5m])", "legendFormat": "{{instance}} deadlocks/s" },
+        { "expr": "rate(mysql_innodb_row_lock_waits_total{instance=~\"$instance\"}[5m])", "legendFormat": "{{instance}} row lock waits/s" }
+      ]
+    },
+    {
+      "title": "Processlist",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "mysql_processlist_longest_seconds{instance=~\"$instance\"}", "legendFormat": "{{instance}} longest query" },
+        { "expr": "mysql_processlist_locked{instance=~\"$instance\"}", "legendFormat": "{{instance}} locked" }
+      ]
+    },
+    {
+      "title": "Binary Log Size",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        { "expr": "mysql_binlog_size_bytes{instance=~\"$instance\"}", "legendFormat": "{{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    }
+  ]
+}
