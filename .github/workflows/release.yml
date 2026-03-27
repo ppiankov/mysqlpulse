@@ -1,0 +1,125 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Verify CHANGELOG entry
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+            echo "ERROR: CHANGELOG.md has no entry for version ${VERSION}"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: make test
+
+      - name: Build binaries
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          REVISION="$(git rev-parse --short HEAD)"
+          LDFLAGS="-s -w -X main.version=${VERSION} -X main.revision=${REVISION}"
+          for GOOS in linux darwin; do
+            for GOARCH in amd64 arm64; do
+              output="mysqlpulse-${GOOS}-${GOARCH}"
+              if [ "$GOOS" = "windows" ]; then output="${output}.exe"; fi
+              GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "${LDFLAGS}" -o "dist/${output}" ./cmd/mysqlpulse
+            done
+          done
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md > /tmp/release_notes.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file /tmp/release_notes.md
+
+      - name: Build and push Docker image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "ghcr.io/${{ github.repository }}:${VERSION}" -t "ghcr.io/${{ github.repository }}:latest" .
+          docker push "ghcr.io/${{ github.repository }}:${VERSION}"
+          docker push "ghcr.io/${{ github.repository }}:latest"
+
+      - name: Update Homebrew tap
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DARWIN_AMD64_SHA=$(shasum -a 256 dist/mysqlpulse-darwin-amd64 | cut -d' ' -f1)
+          DARWIN_ARM64_SHA=$(shasum -a 256 dist/mysqlpulse-darwin-arm64 | cut -d' ' -f1)
+          LINUX_AMD64_SHA=$(shasum -a 256 dist/mysqlpulse-linux-amd64 | cut -d' ' -f1)
+          LINUX_ARM64_SHA=$(shasum -a 256 dist/mysqlpulse-linux-arm64 | cut -d' ' -f1)
+
+          cat > /tmp/mysqlpulse.rb <<FORMULA
+          class Mysqlpulse < Formula
+            desc "MySQL observability CLI for humans and agents"
+            homepage "https://github.com/ppiankov/mysqlpulse"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/ppiankov/mysqlpulse/releases/download/v${VERSION}/mysqlpulse-darwin-arm64"
+                sha256 "${DARWIN_ARM64_SHA}"
+              else
+                url "https://github.com/ppiankov/mysqlpulse/releases/download/v${VERSION}/mysqlpulse-darwin-amd64"
+                sha256 "${DARWIN_AMD64_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/ppiankov/mysqlpulse/releases/download/v${VERSION}/mysqlpulse-linux-arm64"
+                sha256 "${LINUX_ARM64_SHA}"
+              else
+                url "https://github.com/ppiankov/mysqlpulse/releases/download/v${VERSION}/mysqlpulse-linux-amd64"
+                sha256 "${LINUX_AMD64_SHA}"
+              end
+            end
+
+            def install
+              bin.install Dir["mysqlpulse*"].first => "mysqlpulse"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("\#{bin}/mysqlpulse version")
+            end
+          end
+          FORMULA
+
+          cd /tmp
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ppiankov/homebrew-tap.git"
+          mkdir -p homebrew-tap/Formula
+          cp /tmp/mysqlpulse.rb homebrew-tap/Formula/mysqlpulse.rb
+          cd homebrew-tap
+          git add Formula/mysqlpulse.rb
+          git commit -m "mysqlpulse ${VERSION}"
+          git push

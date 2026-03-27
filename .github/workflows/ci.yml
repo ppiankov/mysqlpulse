@@ -18,5 +18,7 @@ jobs:
           go-version: "1.23"
       - run: make build
       - run: make test
-      - run: make lint
-        continue-on-error: true
+      - name: Lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+          make lint
