@@ -256,6 +256,43 @@ var (
 		Name: "mysql_gtid_mode",
 		Help: "GTID mode (1=ON, 0=OFF).",
 	}, []string{"instance"})
+
+	// GTID replication (WO-15).
+	GTIDExecutedCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gtid_executed_count",
+		Help: "Number of GTID sets in gtid_executed.",
+	}, []string{"instance"})
+
+	GTIDPurgedCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gtid_purged_count",
+		Help: "Number of GTID sets in gtid_purged.",
+	}, []string{"instance"})
+
+	// Group Replication (WO-16).
+	GRMemberState = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gr_member_state",
+		Help: "Group Replication member state (1=ONLINE, 0=other).",
+	}, []string{"instance", "member"})
+
+	GRTransactionsInQueue = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gr_transactions_in_queue",
+		Help: "Transactions waiting in the applier queue.",
+	}, []string{"instance"})
+
+	GRConflictDetectedTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gr_conflict_detected_total",
+		Help: "Total certification-based conflicts detected.",
+	}, []string{"instance"})
+
+	GRFlowControlCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gr_flow_control_count",
+		Help: "Number of flow control events.",
+	}, []string{"instance"})
+
+	GRMembersTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "mysql_gr_members_total",
+		Help: "Total number of group replication members.",
+	}, []string{"instance"})
 )
 
 // Register adds all metric descriptors to the given registerer.
@@ -291,5 +328,10 @@ func Register(reg prometheus.Registerer) {
 		// Global variables (WO-14).
 		MaxConnections, InnoDBBufferPoolSizeBytes,
 		ReadOnly, SuperReadOnly, GTIDMode,
+		// GTID replication (WO-15).
+		GTIDExecutedCount, GTIDPurgedCount,
+		// Group Replication (WO-16).
+		GRMemberState, GRTransactionsInQueue,
+		GRConflictDetectedTotal, GRFlowControlCount, GRMembersTotal,
 	)
 }

@@ -57,6 +57,8 @@ func newServeCmd() *cobra.Command {
 				collector.NewBinlog(),
 				collector.NewPerfSchema(),
 				collector.NewGlobalVars(),
+				collector.NewGTID(),
+				collector.NewGroupReplication(),
 			}
 
 			eng := engine.New(cfg.PollInterval, targets, collectors)
