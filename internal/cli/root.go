@@ -34,6 +34,8 @@ func newRootCmd() *cobra.Command {
 		newServeCmd(),
 		newCheckCmd(),
 		newReportCmd(),
+		newInnoDBCmd(),
+		newTopologyCmd(),
 	)
 
 	return cmd
