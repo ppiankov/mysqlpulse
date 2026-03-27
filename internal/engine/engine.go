@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ppiankov/mysqlpulse/internal/alerter"
 	"github.com/ppiankov/mysqlpulse/internal/collector"
 	"github.com/ppiankov/mysqlpulse/internal/metrics"
 )
@@ -17,11 +18,13 @@ type Engine struct {
 	interval   time.Duration
 	targets    []Target
 	collectors []collector.Collector
+	alerter    *alerter.Alerter
 }
 
 // Target pairs a DSN label with its database handle.
 type Target struct {
 	Instance string
+	DSN      string
 	DB       *sql.DB
 }
 
@@ -32,6 +35,11 @@ func New(interval time.Duration, targets []Target, collectors []collector.Collec
 		targets:    targets,
 		collectors: collectors,
 	}
+}
+
+// SetAlerter configures the alerter for the engine.
+func (e *Engine) SetAlerter(a *alerter.Alerter) {
+	e.alerter = a
 }
 
 // Run starts the poll loop. Blocks until ctx is cancelled.
@@ -65,5 +73,8 @@ func (e *Engine) poll(ctx context.Context) {
 				log.Printf("collector %s on %s: %v", c.Name(), t.Instance, err)
 			}
 		}
+
+		// Evaluate alert conditions after collecting.
+		alerter.Evaluate(ctx, t.DB, t.DSN, e.alerter)
 	}
 }

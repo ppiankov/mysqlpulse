@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -16,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 
+	"github.com/ppiankov/mysqlpulse/internal/alerter"
 	"github.com/ppiankov/mysqlpulse/internal/collector"
 	"github.com/ppiankov/mysqlpulse/internal/config"
 	"github.com/ppiankov/mysqlpulse/internal/engine"
@@ -62,6 +64,17 @@ func newServeCmd() *cobra.Command {
 			}
 
 			eng := engine.New(cfg.PollInterval, targets, collectors)
+
+			// Configure alerter from environment.
+			a := alerter.New(alerter.Config{
+				TelegramToken: os.Getenv("ALERT_TELEGRAM_TOKEN"),
+				TelegramChat:  os.Getenv("ALERT_TELEGRAM_CHAT"),
+				WebhookURL:    os.Getenv("ALERT_WEBHOOK_URL"),
+			})
+			eng.SetAlerter(a)
+			if a != nil {
+				log.Println("alerting enabled")
+			}
 
 			addr := fmt.Sprintf(":%d", cfg.MetricsPort)
 			srv := server.New(addr, registry)
@@ -111,6 +124,7 @@ func openTargets(dsns []string) ([]engine.Target, []*sql.DB, error) {
 
 		targets = append(targets, engine.Target{
 			Instance: instanceLabel(dsn),
+			DSN:      dsn,
 			DB:       db,
 		})
 		closers = append(closers, db)
