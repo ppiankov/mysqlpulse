@@ -117,9 +117,11 @@ jobs:
 
           cd /tmp
           git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ppiankov/homebrew-tap.git"
-          mkdir -p homebrew-tap/Formula
-          cp /tmp/mysqlpulse.rb homebrew-tap/Formula/mysqlpulse.rb
           cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p Formula
+          cp /tmp/mysqlpulse.rb Formula/mysqlpulse.rb
           git add Formula/mysqlpulse.rb
           git commit -m "mysqlpulse ${VERSION}"
           git push
