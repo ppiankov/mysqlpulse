@@ -32,6 +32,28 @@ spec:
               value: "{{ .Values.mysql.metricsPort }}"
             - name: POLL_INTERVAL
               value: "{{ .Values.mysql.pollInterval }}"
+            {{- if .Values.alerting.telegramToken }}
+            - name: ALERT_TELEGRAM_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-mysqlpulse
+                  key: telegram-token
+            - name: ALERT_TELEGRAM_CHAT
+              value: "{{ .Values.alerting.telegramChat }}"
+            {{- end }}
+            {{- if .Values.alerting.webhookURL }}
+            - name: ALERT_WEBHOOK_URL
+              value: "{{ .Values.alerting.webhookURL }}"
+            {{- end }}
+            {{- if .Values.alerting.grafanaURL }}
+            - name: GRAFANA_URL
+              value: "{{ .Values.alerting.grafanaURL }}"
+            - name: GRAFANA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-mysqlpulse
+                  key: grafana-token
+            {{- end }}
           ports:
             - name: metrics
               containerPort: {{ .Values.mysql.metricsPort }}
