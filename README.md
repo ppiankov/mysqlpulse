@@ -183,4 +183,4 @@ grafana/            Grafana dashboard JSON
 
 ## License
 
-MIT
+[MIT](LICENSE)
