@@ -36,6 +36,8 @@ func newRootCmd() *cobra.Command {
 		newReportCmd(),
 		newInnoDBCmd(),
 		newTopologyCmd(),
+		newDiffCmd(),
+		newWatchCmd(),
 	)
 
 	return cmd
