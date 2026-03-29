@@ -1,39 +1,43 @@
-replicaCount: 1
-
 image:
   repository: ghcr.io/ppiankov/mysqlpulse
-  tag: "0.1.0"
+  tag: ""  # defaults to appVersion
   pullPolicy: IfNotPresent
 
-mysql:
-  dsn: "root@tcp(mysql:3306)/"
-  metricsPort: 9104
-  pollInterval: "15s"
+# Each target creates its own Deployment, Secret, and Service.
+# Target names must be DNS-compatible (lowercase alphanumeric + hyphens).
+targets:
+  - name: primary
+    # Set dsn OR existingSecret (not both).
+    dsn: ""
+    existingSecret: ""  # name of existing Secret with key "dsn"
+    metricsPort: 9104
+    pollInterval: "15s"
+    telegramToken: ""
+    telegramChat: ""
+    webhookURL: ""
+    grafanaURL: ""
+    grafanaToken: ""
 
-alerting:
-  telegramToken: ""
-  telegramChat: ""
-  webhookURL: ""
-  grafanaURL: ""
-  grafanaToken: ""
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
 
-service:
-  type: ClusterIP
-  port: 9104
-
+# Prometheus ServiceMonitor (requires prometheus-operator).
 serviceMonitor:
   enabled: false
   interval: "15s"
+  scrapeTimeout: ""
   labels: {}
 
+# PrometheusRule alerts (requires prometheus-operator).
 prometheusRule:
   enabled: false
   labels: {}
 
-resources:
-  limits:
-    cpu: 200m
-    memory: 128Mi
-  requests:
-    cpu: 50m
-    memory: 64Mi
+nodeSelector: {}
+tolerations: []
+affinity: {}

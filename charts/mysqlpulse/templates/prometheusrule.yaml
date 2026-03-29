@@ -2,10 +2,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ .Release.Name }}-mysqlpulse
+  name: {{ include "mysqlpulse.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: mysqlpulse
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "mysqlpulse.labels" . | nindent 4 }}
     {{- with .Values.prometheusRule.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

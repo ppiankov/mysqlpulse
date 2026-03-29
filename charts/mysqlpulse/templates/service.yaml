@@ -1,17 +1,21 @@
+{{- range .Values.targets }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-mysqlpulse
+  name: {{ include "mysqlpulse.targetFullname" (dict "root" $ "target" .) }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    app.kubernetes.io/name: mysqlpulse
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "mysqlpulse.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
 spec:
-  type: {{ .Values.service.type }}
+  clusterIP: None
+  selector:
+    {{- include "mysqlpulse.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
   ports:
-    - port: {{ .Values.service.port }}
+    - name: metrics
+      port: {{ .metricsPort | default 9104 }}
       targetPort: metrics
       protocol: TCP
-      name: metrics
-  selector:
-    app.kubernetes.io/name: mysqlpulse
-    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

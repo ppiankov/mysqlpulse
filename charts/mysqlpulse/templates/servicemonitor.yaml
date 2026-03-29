@@ -2,19 +2,28 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ .Release.Name }}-mysqlpulse
+  name: {{ include "mysqlpulse.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: mysqlpulse
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "mysqlpulse.labels" . | nindent 4 }}
     {{- with .Values.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  jobLabel: app.kubernetes.io/component
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: mysqlpulse
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- include "mysqlpulse.selectorLabels" . | nindent 6 }}
   endpoints:
     - port: metrics
-      interval: {{ .Values.serviceMonitor.interval }}
+      path: /metrics
+      scheme: http
+      interval: {{ .Values.serviceMonitor.interval | default "15s" }}
+      {{- with .Values.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      honorLabels: true
 {{- end }}

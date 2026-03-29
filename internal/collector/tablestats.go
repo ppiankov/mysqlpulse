@@ -17,10 +17,10 @@ func NewTableStats() *TableStats { return &TableStats{} }
 func (t *TableStats) Name() string { return "tablestats" }
 
 func (t *TableStats) Collect(ctx context.Context, db *sql.DB, instance string) error {
-	const query = `SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS,
-		DATA_LENGTH, INDEX_LENGTH, DATA_FREE,
-		AUTO_INCREMENT, COALESCE(
-			CASE DATA_TYPE
+	const query = `SELECT t.TABLE_SCHEMA, t.TABLE_NAME, t.TABLE_ROWS,
+		t.DATA_LENGTH, t.INDEX_LENGTH, t.DATA_FREE,
+		t.AUTO_INCREMENT, COALESCE(
+			CASE c.DATA_TYPE
 				WHEN 'tinyint' THEN 255
 				WHEN 'smallint' THEN 65535
 				WHEN 'mediumint' THEN 16777215
