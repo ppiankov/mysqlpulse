@@ -9,6 +9,18 @@ Change classification: **Breaking** | **Additive** | **Behavioral** | **Internal
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-29
+
+### Behavioral
+- Fix TABLE_SCHEMA ambiguity in table stats query (MySQL error 1052)
+
+### Additive
+- Multi-target Helm chart: each target creates its own Deployment, Secret, and Service
+- Support `existingSecret` for pre-provisioned DSN secrets
+- Add `_helpers.tpl` with standard Kubernetes labeling
+- Add `jobLabel`-based ServiceMonitor discovery for per-target Prometheus jobs
+- Add pod security context (runAsNonRoot, readOnlyRootFilesystem, drop ALL)
+
 ## [0.1.0] - 2026-03-27
 
 ### Additive

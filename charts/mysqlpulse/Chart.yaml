@@ -2,5 +2,5 @@ apiVersion: v2
 name: mysqlpulse
 description: MySQL observability CLI for humans and agents
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.1
+appVersion: "0.1.1"

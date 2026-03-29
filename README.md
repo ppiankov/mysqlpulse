@@ -133,23 +133,24 @@ Alerts include the **host in the header** for immediate identification and use c
 ### Docker
 
 ```bash
-docker run -e MYSQL_DSN="user:pass@tcp(db:3306)/" ghcr.io/ppiankov/mysqlpulse:0.1.0
+docker run -e MYSQL_DSN="user:pass@tcp(db:3306)/" ghcr.io/ppiankov/mysqlpulse:0.1.1
 ```
 
 ### Helm
 
 ```bash
 helm install mysqlpulse ./charts/mysqlpulse \
-  --set mysql.dsn="user:pass@tcp(db:3306)/" \
+  --set 'targets[0].name=primary' \
+  --set 'targets[0].dsn=user:pass@tcp(db:3306)/' \
   --set serviceMonitor.enabled=true \
   --set prometheusRule.enabled=true
 ```
 
 The Helm chart includes:
-- Deployment with health probes (/healthz)
-- Service for Prometheus scraping
-- Secret for DSN storage
-- ServiceMonitor (optional, for Prometheus Operator)
+- One Deployment, Secret, and Service per target
+- Support for multiple targets (one exporter per database)
+- `existingSecret` support for pre-provisioned DSN secrets
+- ServiceMonitor with per-target job labels (optional, for Prometheus Operator)
 - PrometheusRule with 7 alert rules (optional)
 
 ### Grafana
